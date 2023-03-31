@@ -29,6 +29,7 @@ import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.codelab.friendlychat.MainActivity.Companion.ANONYMOUS
 import com.google.firebase.codelab.friendlychat.databinding.ImageMessageBinding
 import com.google.firebase.codelab.friendlychat.databinding.MessageBinding
+import com.google.firebase.codelab.friendlychat.databinding.RecievermessageBinding
 import com.google.firebase.codelab.friendlychat.model.FriendlyMessage
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -46,7 +47,13 @@ class FriendlyMessageAdapter(
             val view = inflater.inflate(R.layout.message, parent, false)
             val binding = MessageBinding.bind(view)
             MessageViewHolder(binding)
-        } else {
+        }
+        else if(viewType == VIEW_RTYPE_TEXT){
+            val view = inflater.inflate(R.layout.recievermessage, parent, false)
+            val binding2 = RecievermessageBinding.bind(view)
+            MessageViewHolder2(binding2)
+        }
+        else {
             val view = inflater.inflate(R.layout.image_message, parent, false)
             val binding = ImageMessageBinding.bind(view)
             ImageMessageViewHolder(binding)
@@ -54,22 +61,53 @@ class FriendlyMessageAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, model: FriendlyMessage) {
-        if (options.snapshots[position].text != null) {
+        if (options.snapshots[position].text != null&&options.snapshots[position].name!= null&&options.snapshots[position].name!= currentUserName) {
             (holder as MessageViewHolder).bind(model)
-        } else {
+        }
+        else if(options.snapshots[position].text != null&&options.snapshots[position].name!= null&&options.snapshots[position].name== currentUserName) {
+            (holder as MessageViewHolder2).bind(model)
+        }
+        else {
             (holder as ImageMessageViewHolder).bind(model)
         }
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (options.snapshots[position].text != null) VIEW_TYPE_TEXT else VIEW_TYPE_IMAGE
+        val userName = options.snapshots[position].name
+        return if (userName != ANONYMOUS && currentUserName != userName && userName != null)
+            VIEW_TYPE_TEXT
+        else if(userName != ANONYMOUS && currentUserName == userName && userName != null)
+            VIEW_RTYPE_TEXT
+        else
+            VIEW_TYPE_IMAGE
+    }
+
+    inner class MessageViewHolder2(private val binding: RecievermessageBinding) : ViewHolder(binding.root) {
+        fun bind(item: FriendlyMessage) {
+            binding.RmessageTextView.text = item.text
+            setTextColor(item.name, binding.RmessageTextView)
+            binding.RmessengerTextView.text = item.name ?: ANONYMOUS
+            if (item.photoUrl != null) {
+                loadImageIntoView(binding.RmessengerImageView, item.photoUrl)
+            } else {
+                binding.RmessengerImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
+            }
+        }
+        private fun setTextColor(userName: String?, textView: TextView) {
+            if (userName != ANONYMOUS && currentUserName == userName && userName != null) {
+                textView.setBackgroundResource(R.drawable.rounded_message_blue)
+                textView.setTextColor(Color.WHITE)
+            } else {
+                textView.setBackgroundResource(R.drawable.rounded_message_gray)
+                textView.setTextColor(Color.BLACK)
+            }
+        }
     }
 
     inner class MessageViewHolder(private val binding: MessageBinding) : ViewHolder(binding.root) {
         fun bind(item: FriendlyMessage) {
             binding.messageTextView.text = item.text
             setTextColor(item.name, binding.messageTextView)
-
             binding.messengerTextView.text = item.name ?: ANONYMOUS
             if (item.photoUrl != null) {
                 loadImageIntoView(binding.messengerImageView, item.photoUrl)
@@ -135,6 +173,7 @@ class FriendlyMessageAdapter(
     companion object {
         const val TAG = "MessageAdapter"
         const val VIEW_TYPE_TEXT = 1
+        const val VIEW_RTYPE_TEXT = 3
         const val VIEW_TYPE_IMAGE = 2
     }
 }

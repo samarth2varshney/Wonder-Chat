@@ -15,8 +15,11 @@
  */
 package com.google.firebase.codelab.friendlychat
 
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.preference.PreferenceManager
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -29,6 +32,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.codelab.friendlychat.databinding.ActivitySignInBinding
 import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 
 
 class SignInActivity : AppCompatActivity() {
@@ -39,11 +43,15 @@ class SignInActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // This codelab uses View Binding
-        // See: https://developer.android.com/topic/libraries/view-binding
         binding = ActivitySignInBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val Groupnames = arrayListOf<String>()
+        var arrayListString = Gson().toJson(Groupnames)
+        val sharedPreferences: SharedPreferences = getSharedPreferences("arrayListString", Context.MODE_PRIVATE)
+        var prefs: SharedPreferences.Editor = sharedPreferences.edit()
+        prefs.putString("arrayListString", arrayListString).apply()
+
     }
 
     public override fun onStart() {
@@ -74,10 +82,7 @@ class SignInActivity : AppCompatActivity() {
             Log.d(TAG, "Sign in successful!")
             goToMainActivity()
         } else {
-            Toast.makeText(
-                    this,
-                    "There was an error signing in",
-                    Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "There was an error signing in", Toast.LENGTH_LONG).show()
 
             val response = result.idpResponse
             if (response == null) {
@@ -89,7 +94,7 @@ class SignInActivity : AppCompatActivity() {
     }
 
     private fun goToMainActivity() {
-        startActivity(Intent(this, MainActivity::class.java))
+        startActivity(Intent(this, HomePage::class.java))
         finish()
     }
 

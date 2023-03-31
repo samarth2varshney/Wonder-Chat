@@ -1,18 +1,3 @@
-/**
- * Copyright Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.google.firebase.codelab.friendlychat
 
 import android.content.Intent
@@ -25,6 +10,7 @@ import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.auth.BuildConfig
 import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -47,9 +33,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var db: FirebaseDatabase
     private lateinit var adapter: FriendlyMessageAdapter
 
-    private val openDocument = registerForActivityResult(MyOpenDocumentContract()) { uri ->
-        uri?.let { onImageSelected(it) }
-    }
+//    private val openDocument = registerForActivityResult(MyOpenDocumentContract()) { uri ->
+//        uri?.let { onImageSelected(it) }
+//    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,6 +44,9 @@ class MainActivity : AppCompatActivity() {
         // See: https://developer.android.com/topic/libraries/view-binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+
+        val MESSAGES_CHILD = intent.getStringExtra("MESSAGES_CHILD")
 
         // When running in debug mode, connect to the Firebase Emulator Suite
         // "10.0.2.2" is a special value which allows the Android emulator to
@@ -80,7 +69,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Realtime Database
         db = Firebase.database
-        val messagesRef = db.reference.child(MESSAGES_CHILD)
+        val messagesRef = db.reference.child(MESSAGES_CHILD!!)
 
         // The FirebaseRecyclerAdapter class and options come from the FirebaseUI library
         // See: https://github.com/firebase/FirebaseUI-Android
@@ -117,9 +106,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         // When the image button is clicked, launch the image picker
-        binding.addMessageImageView.setOnClickListener {
-            openDocument.launch(arrayOf("image/*"))
-        }
+//        binding.addMessageImageView.setOnClickListener {
+//            openDocument.launch(arrayOf("image/*"))
+//        }
     }
 
     public override fun onStart() {
@@ -159,59 +148,59 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun onImageSelected(uri: Uri) {
-        Log.d(TAG, "Uri: $uri")
-        val user = auth.currentUser
-        val tempMessage = FriendlyMessage(null, getUserName(), getPhotoUrl(), LOADING_IMAGE_URL)
-        db.reference
-                .child(MESSAGES_CHILD)
-                .push()
-                .setValue(
-                        tempMessage,
-                        DatabaseReference.CompletionListener { databaseError, databaseReference ->
-                            if (databaseError != null) {
-                                Log.w(
-                                        TAG, "Unable to write message to database.",
-                                        databaseError.toException()
-                                )
-                                return@CompletionListener
-                            }
+//    private fun onImageSelected(uri: Uri) {
+//        Log.d(TAG, "Uri: $uri")
+//        val user = auth.currentUser
+//        val tempMessage = FriendlyMessage(null, getUserName(), getPhotoUrl(), LOADING_IMAGE_URL)
+//        db.reference
+//                .child(MESSAGES_CHILD)
+//                .push()
+//                .setValue(
+//                        tempMessage,
+//                        DatabaseReference.CompletionListener { databaseError, databaseReference ->
+//                            if (databaseError != null) {
+//                                Log.w(
+//                                        TAG, "Unable to write message to database.",
+//                                        databaseError.toException()
+//                                )
+//                                return@CompletionListener
+//                            }
+//
+//                            // Build a StorageReference and then upload the file
+//                            val key = databaseReference.key
+//                            val storageReference = Firebase.storage
+//                                    .getReference(user!!.uid)
+//                                    .child(key!!)
+//                                    .child(uri.lastPathSegment!!)
+//                            putImageInStorage(storageReference, uri, key)
+//                        })
+//    }
 
-                            // Build a StorageReference and then upload the file
-                            val key = databaseReference.key
-                            val storageReference = Firebase.storage
-                                    .getReference(user!!.uid)
-                                    .child(key!!)
-                                    .child(uri.lastPathSegment!!)
-                            putImageInStorage(storageReference, uri, key)
-                        })
-    }
-
-    private fun putImageInStorage(storageReference: StorageReference, uri: Uri, key: String?) {
-        // First upload the image to Cloud Storage
-        storageReference.putFile(uri)
-            .addOnSuccessListener(
-                this
-            ) { taskSnapshot -> // After the image loads, get a public downloadUrl for the image
-                // and add it to the message.
-                taskSnapshot.metadata!!.reference!!.downloadUrl
-                    .addOnSuccessListener { uri ->
-                        val friendlyMessage =
-                            FriendlyMessage(null, getUserName(), getPhotoUrl(), uri.toString())
-                        db.reference
-                            .child(MESSAGES_CHILD)
-                            .child(key!!)
-                            .setValue(friendlyMessage)
-                    }
-            }
-            .addOnFailureListener(this) { e ->
-                Log.w(
-                    TAG,
-                    "Image upload task was unsuccessful.",
-                    e
-                )
-            }
-    }
+//    private fun putImageInStorage(storageReference: StorageReference, uri: Uri, key: String?) {
+//        // First upload the image to Cloud Storage
+//        storageReference.putFile(uri)
+//            .addOnSuccessListener(
+//                this
+//            ) { taskSnapshot -> // After the image loads, get a public downloadUrl for the image
+//                // and add it to the message.
+//                taskSnapshot.metadata!!.reference!!.downloadUrl
+//                    .addOnSuccessListener { uri ->
+//                        val friendlyMessage =
+//                            FriendlyMessage(null, getUserName(), getPhotoUrl(), uri.toString())
+//                        db.reference
+//                            .child(MESSAGES_CHILD)
+//                            .child(key!!)
+//                            .setValue(friendlyMessage)
+//                    }
+//            }
+//            .addOnFailureListener(this) { e ->
+//                Log.w(
+//                    TAG,
+//                    "Image upload task was unsuccessful.",
+//                    e
+//                )
+//            }
+//    }
 
     private fun signOut() {
         AuthUI.getInstance().signOut(this)
@@ -233,7 +222,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        const val MESSAGES_CHILD = "messages"
         const val ANONYMOUS = "anonymous"
         private const val LOADING_IMAGE_URL = "https://www.google.com/images/spin-32.gif"
     }

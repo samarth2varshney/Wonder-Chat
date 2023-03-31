@@ -9,13 +9,14 @@
     <TextView
         android:id="@+id/messageTextView"
         android:layout_width="wrap_content"
-        android:maxWidth="250dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
-        android:padding="10dp"
         android:background="@drawable/rounded_message_gray"
+        android:maxWidth="250dp"
+        android:padding="10dp"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@android:color/black"
+        android:textSize="14sp"
         app:layout_constraintStart_toEndOf="@id/messengerImageView"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="This is a message" />
@@ -26,6 +27,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="10dp"
         android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="10sp"
         app:layout_constraintStart_toStartOf="@id/messageTextView"
         app:layout_constraintTop_toBottomOf="@id/messageTextView"
         tools:text="FirstName LastName" />
@@ -39,6 +41,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/messageTextView"
         app:layout_constraintStart_toStartOf="parent" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
