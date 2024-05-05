@@ -26,6 +26,7 @@ class AddGroup : AppCompatActivity() {
             Groupnames.add(string)
             arrayListString = Gson().toJson(Groupnames)
             prefs.putString("arrayListString", arrayListString).apply()
+            SharedData.notenabel = false
             startActivity(Intent(this, HomePage::class.java))
             finish()
         }

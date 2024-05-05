@@ -51,7 +51,6 @@ class SignInActivity : AppCompatActivity() {
         val sharedPreferences: SharedPreferences = getSharedPreferences("arrayListString", Context.MODE_PRIVATE)
         var prefs: SharedPreferences.Editor = sharedPreferences.edit()
         prefs.putString("arrayListString", arrayListString).apply()
-
     }
 
     public override fun onStart() {

@@ -17,7 +17,6 @@ package com.google.firebase.codelab.friendlychat
 
 import android.text.Editable
 import android.text.TextWatcher
-import android.widget.Button
 import android.widget.ImageView
 
 class MyButtonObserver(private val button: ImageView) : TextWatcher {

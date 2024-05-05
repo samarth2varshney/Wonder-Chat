@@ -11,6 +11,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".MainActivity2"
+            android:exported="true">
+
+        </activity>
+        <activity
             android:name=".AddGroup"
             android:exported="false" />
         <activity
@@ -27,7 +32,7 @@
             android:exported="true" />
         <activity
             android:name=".SignInActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
     </application>
 
 </manifest>

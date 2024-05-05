@@ -1,12 +1,12 @@
 package com.google.firebase.codelab.friendlychat
 
 import android.content.Intent
-import android.net.Uri
+
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.ProgressBar
+import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.firebase.ui.auth.AuthUI
@@ -14,44 +14,35 @@ import com.firebase.ui.auth.BuildConfig
 import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.codelab.friendlychat.SharedData.languageArrayList
 import com.google.firebase.codelab.friendlychat.databinding.ActivityMainBinding
 import com.google.firebase.codelab.friendlychat.model.FriendlyMessage
-import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
-import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.ktx.storage
-
+import com.google.mlkit.nl.translate.TranslateLanguage
+import java.util.*
+import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var manager: LinearLayoutManager
-
-    // Firebase instance variables
+    private var targetLanguageTitle = "Hindi"
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseDatabase
     private lateinit var adapter: FriendlyMessageAdapter
 
-//    private val openDocument = registerForActivityResult(MyOpenDocumentContract()) { uri ->
-//        uri?.let { onImageSelected(it) }
-//    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // This codelab uses View Binding
-        // See: https://developer.android.com/topic/libraries/view-binding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
 
-        val MESSAGES_CHILD = intent.getStringExtra("MESSAGES_CHILD")
+        val MESSAGES_CHILD = SharedData.Message_Child
+        loadAvialablelanguage()
 
-        // When running in debug mode, connect to the Firebase Emulator Suite
-        // "10.0.2.2" is a special value which allows the Android emulator to
-        // connect to "localhost" on the host computer. The port values are
-        // defined in the firebase.json file.
         if (BuildConfig.DEBUG) {
             Firebase.database.useEmulator("10.0.2.2", 9000)
             Firebase.auth.useEmulator("10.0.2.2", 9099)
@@ -77,11 +68,28 @@ class MainActivity : AppCompatActivity() {
             .setQuery(messagesRef, FriendlyMessage::class.java)
             .build()
         adapter = FriendlyMessageAdapter(options, getUserName())
-        binding.progressBar.visibility = ProgressBar.INVISIBLE
         manager = LinearLayoutManager(this)
         manager.stackFromEnd = true
         binding.messageRecyclerView.layoutManager = manager
         binding.messageRecyclerView.adapter = adapter
+
+        binding.addMessageImageView.setOnClickListener {
+            val popupMenu = PopupMenu(this, binding.addMessageImageView)
+            for (i in languageArrayList!!.indices) {
+                popupMenu.menu.add(Menu.NONE, i, i,languageArrayList!![i].languagetitle)
+            }
+            popupMenu.show()
+            popupMenu.setOnMenuItemClickListener { menuItem ->
+
+                val position = menuItem.itemId
+                SharedData.targetLanguageCode = languageArrayList!![position].languagecode
+
+                finish()
+                startActivity(Intent(this,MainActivity::class.java))
+
+                false
+            }
+        }
 
         // Scroll down when a new message arrives
         // See MyScrollToBottomObserver for details
@@ -95,8 +103,13 @@ class MainActivity : AppCompatActivity() {
 
         // When the send button is clicked, send a text message
         binding.sendButton.setOnClickListener {
+            val mesage = AESEncyption.encrypt(binding.messageEditText.text.toString())
+//            val ency = AESEncyption.encrypt(binding.messageEditText.text.toString())
+//            Log.i("samarth",ency)
+//            val dec = AESEncyption.decrypt(ency)
+//            Log.i("samarth",dec)
             val friendlyMessage = FriendlyMessage(
-                binding.messageEditText.text.toString(),
+                mesage,
                 getUserName(),
                 getPhotoUrl(),
                 null
@@ -105,10 +118,6 @@ class MainActivity : AppCompatActivity() {
             binding.messageEditText.setText("")
         }
 
-        // When the image button is clicked, launch the image picker
-//        binding.addMessageImageView.setOnClickListener {
-//            openDocument.launch(arrayOf("image/*"))
-//        }
     }
 
     public override fun onStart() {
@@ -148,60 +157,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//    private fun onImageSelected(uri: Uri) {
-//        Log.d(TAG, "Uri: $uri")
-//        val user = auth.currentUser
-//        val tempMessage = FriendlyMessage(null, getUserName(), getPhotoUrl(), LOADING_IMAGE_URL)
-//        db.reference
-//                .child(MESSAGES_CHILD)
-//                .push()
-//                .setValue(
-//                        tempMessage,
-//                        DatabaseReference.CompletionListener { databaseError, databaseReference ->
-//                            if (databaseError != null) {
-//                                Log.w(
-//                                        TAG, "Unable to write message to database.",
-//                                        databaseError.toException()
-//                                )
-//                                return@CompletionListener
-//                            }
-//
-//                            // Build a StorageReference and then upload the file
-//                            val key = databaseReference.key
-//                            val storageReference = Firebase.storage
-//                                    .getReference(user!!.uid)
-//                                    .child(key!!)
-//                                    .child(uri.lastPathSegment!!)
-//                            putImageInStorage(storageReference, uri, key)
-//                        })
-//    }
-
-//    private fun putImageInStorage(storageReference: StorageReference, uri: Uri, key: String?) {
-//        // First upload the image to Cloud Storage
-//        storageReference.putFile(uri)
-//            .addOnSuccessListener(
-//                this
-//            ) { taskSnapshot -> // After the image loads, get a public downloadUrl for the image
-//                // and add it to the message.
-//                taskSnapshot.metadata!!.reference!!.downloadUrl
-//                    .addOnSuccessListener { uri ->
-//                        val friendlyMessage =
-//                            FriendlyMessage(null, getUserName(), getPhotoUrl(), uri.toString())
-//                        db.reference
-//                            .child(MESSAGES_CHILD)
-//                            .child(key!!)
-//                            .setValue(friendlyMessage)
-//                    }
-//            }
-//            .addOnFailureListener(this) { e ->
-//                Log.w(
-//                    TAG,
-//                    "Image upload task was unsuccessful.",
-//                    e
-//                )
-//            }
-//    }
-
     private fun signOut() {
         AuthUI.getInstance().signOut(this)
         startActivity(Intent(this, SignInActivity::class.java))
@@ -218,6 +173,87 @@ class MainActivity : AppCompatActivity() {
         return if (user != null) {
             user.displayName
         } else ANONYMOUS
+    }
+
+    private fun Encryption(encryptmessage: String): Any {
+        val s = encryptmessage
+        val ini = "11111111"
+
+        var cu = 0
+
+        val arr = IntArray(11111111)
+
+        for (i in 0 until s.length) {
+            arr[i] = s[i].code
+            cu++
+        }
+        var res = ""
+        val bin = IntArray(111)
+        var idx = 0
+
+        for (i1 in 0 until cu) {
+            var temp = arr[i1]
+            for (j in 0 until cu) bin[j] = 0
+            idx = 0
+            while (temp > 0) {
+                bin[idx++] = temp % 2
+                temp = temp / 2
+            }
+            var dig = ""
+            var temps: String
+
+            for (j in 0..6) {
+
+                temps = Integer.toString(bin[j])
+
+                dig = dig + temps
+            }
+            var revs = ""
+
+            for (j in dig.length - 1 downTo 0) {
+                val ca = dig[j]
+                revs = revs + ca.toString()
+            }
+            res = res + revs
+        }
+        var comp:String = ini+res
+        var a:String = ""
+        var i:Int = 0
+        var n = comp.length
+        while(i<n){
+            if(comp[i]=='1'){
+                var count: Int = 0
+                while(i<n&&comp[i]=='1'&&count<9){
+                    count++
+                    i++
+                }
+                a =a + count.toString()
+                a= a + "1"
+            }
+            else if(comp[i]=='0'){
+                var count: Int = 0
+                while(i<n&&comp[i]=='0'&&count<9){
+                    count++
+                    i=i+1
+                }
+                a =a + count.toString()
+                a= a + "0"
+            }
+            else
+                i = i + 1
+        }
+        return a
+    }
+
+    private fun loadAvialablelanguage() {
+        languageArrayList= ArrayList()
+        val languagecodelist = TranslateLanguage.getAllLanguages()
+        for(languagecode in languagecodelist){
+            val languageTitle= Locale(languagecode).displayLanguage
+
+            val modeLanguage = ModleLanguage(languagecode,languageTitle)
+            languageArrayList!!.add(modeLanguage)
+        }
     }
 
     companion object {

@@ -19,8 +19,10 @@ import android.graphics.Color
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView.*
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
@@ -33,7 +35,13 @@ import com.google.firebase.codelab.friendlychat.databinding.RecievermessageBindi
 import com.google.firebase.codelab.friendlychat.model.FriendlyMessage
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
-
+import com.google.mlkit.common.model.DownloadConditions
+import com.google.mlkit.nl.translate.TranslateLanguage
+import com.google.mlkit.nl.translate.Translation
+import com.google.mlkit.nl.translate.Translator
+import com.google.mlkit.nl.translate.TranslatorOptions
+import java.util.*
+import kotlin.collections.ArrayList
 // The FirebaseRecyclerAdapter class and options come from the FirebaseUI library
 // See: https://github.com/firebase/FirebaseUI-Android
 class FriendlyMessageAdapter(
@@ -42,6 +50,7 @@ class FriendlyMessageAdapter(
 ) : FirebaseRecyclerAdapter<FriendlyMessage, ViewHolder>(options) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+
         val inflater = LayoutInflater.from(parent.context)
         return if (viewType == VIEW_TYPE_TEXT) {
             val view = inflater.inflate(R.layout.message, parent, false)
@@ -83,8 +92,13 @@ class FriendlyMessageAdapter(
     }
 
     inner class MessageViewHolder2(private val binding: RecievermessageBinding) : ViewHolder(binding.root) {
+
         fun bind(item: FriendlyMessage) {
-            binding.RmessageTextView.text = item.text
+
+            val mesage = AESEncyption.decrypt(item.text!!)
+
+            binding.RmessageTextView.text = mesage
+
             setTextColor(item.name, binding.RmessageTextView)
             binding.RmessengerTextView.text = item.name ?: ANONYMOUS
             if (item.photoUrl != null) {
@@ -92,21 +106,39 @@ class FriendlyMessageAdapter(
             } else {
                 binding.RmessengerImageView.setImageResource(R.drawable.ic_account_circle_black_36dp)
             }
+
         }
+
         private fun setTextColor(userName: String?, textView: TextView) {
             if (userName != ANONYMOUS && currentUserName == userName && userName != null) {
                 textView.setBackgroundResource(R.drawable.rounded_message_blue)
-                textView.setTextColor(Color.WHITE)
+                textView.setTextColor(Color.BLACK)
             } else {
                 textView.setBackgroundResource(R.drawable.rounded_message_gray)
                 textView.setTextColor(Color.BLACK)
             }
         }
+
     }
 
     inner class MessageViewHolder(private val binding: MessageBinding) : ViewHolder(binding.root) {
+
+        private var sourceLanguageCode = SharedData.sourceLanguageCode
+        private var sourceLanguageTitle = "English"
+        private var targetLanguageCode = SharedData.targetLanguageCode
+        private var targetLanguageTitle = "Hindi"
+        private var sourceLanguageText = ""
+        private lateinit var translatoroptions: TranslatorOptions
+        private lateinit var translator: Translator
+
         fun bind(item: FriendlyMessage) {
-            binding.messageTextView.text = item.text
+
+            val mesage = AESEncyption.decrypt(item.text!!)
+
+            binding.messageTextView.text = mesage
+            sourceLanguageText = mesage
+            binding.tranlation.text = mesage
+            startTranslation()
             setTextColor(item.name, binding.messageTextView)
             binding.messengerTextView.text = item.name ?: ANONYMOUS
             if (item.photoUrl != null) {
@@ -116,14 +148,34 @@ class FriendlyMessageAdapter(
             }
         }
 
+
         private fun setTextColor(userName: String?, textView: TextView) {
             if (userName != ANONYMOUS && currentUserName == userName && userName != null) {
                 textView.setBackgroundResource(R.drawable.rounded_message_blue)
-                textView.setTextColor(Color.WHITE)
+                textView.setTextColor(Color.BLACK)
             } else {
                 textView.setBackgroundResource(R.drawable.rounded_message_gray)
                 textView.setTextColor(Color.BLACK)
             }
+        }
+        private fun startTranslation() {
+
+            translatoroptions = TranslatorOptions.Builder().setSourceLanguage(sourceLanguageCode).setTargetLanguage(targetLanguageCode).build()
+            translator = Translation.getClient(translatoroptions)
+
+            val downloadConditions = DownloadConditions.Builder().requireWifi().build()
+
+            translator.downloadModelIfNeeded(downloadConditions)
+                .addOnSuccessListener {
+                    translator.translate(sourceLanguageText)
+                        .addOnSuccessListener {translatedText ->
+                            binding.tranlation.text = translatedText
+                        }.addOnFailureListener{ e->
+                           // Toast.makeText(this,"failed to translate due to ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                }.addOnFailureListener{ e->
+                   // Toast.makeText(this,"failed to translate due to ${e.message}", Toast.LENGTH_LONG).show()
+                }
         }
     }
 
@@ -170,10 +222,97 @@ class FriendlyMessageAdapter(
         requestBuilder.into(view)
     }
 
+
     companion object {
         const val TAG = "MessageAdapter"
         const val VIEW_TYPE_TEXT = 1
         const val VIEW_RTYPE_TEXT = 3
         const val VIEW_TYPE_IMAGE = 2
+
+        private fun Decryption(toString: String): Any {
+            var s = toString
+            var i=0
+            var x =""
+            var n=s.length
+            while(i<n){
+                if(i%2==0){
+                    var len:Int = s[i].code-48
+                    var z:Int = 0
+                    while(z<len){
+                        x= x+s[i+1]
+                        z++
+                    }
+                }
+                i++
+            }
+            s=x
+            val invalid = "Invalid Code"
+
+            val ini = "11111111"
+            var flag = true
+
+            for (i in 0..7) {
+                if (ini[i] != s[i]) {
+                    flag = false
+                    break
+                }
+            }
+            var `val` = ""
+
+            for (i in 8 until s.length) {
+                val ch = s[i]
+                `val` = `val` + ch.toString()
+            }
+
+            val arr = Array(11101) { IntArray(8) }
+            var ind1 = -1
+            var ind2 = 0
+
+            for (i in 0 until `val`.length) {
+
+                if (i % 7 == 0) {
+
+                    ind1++
+                    ind2 = 0
+                    val ch = `val`[i]
+                    arr[ind1][ind2] = ch.code - '0'.code
+                    ind2++
+                } else {
+
+                    val ch = `val`[i]
+                    arr[ind1][ind2] = ch.code - '0'.code
+                    ind2++
+                }
+            }
+            val num = IntArray(11111)
+            var nind = 0
+            var tem = 0
+            var cu = 0
+
+            for (i in 0..ind1) {
+                cu = 0
+                tem = 0
+
+                for (j in 6 downTo 0) {
+                    val tem1 = Math.pow(2.0, cu.toDouble()).toInt()
+                    tem += arr[i][j] * tem1
+                    cu++
+                }
+                num[nind++] = tem
+            }
+            var ret = ""
+            var ch: Char
+
+            for (i in 0 until nind) {
+                ch = num[i].toChar()
+                ret = ret + ch.toString()
+            }
+            if (`val`.length % 7 == 0 && flag == true) {
+                return ret
+            } else {
+                return invalid
+            }
+        }
+
     }
 }
